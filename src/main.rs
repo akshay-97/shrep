@@ -10,6 +10,7 @@ enum GrepPatterns<'a>{
     AlphaNumerUnderscore,
     Contains(&'a str),
     PositiveCharacterGroups(HashSet<char>),
+    NegativeCharacterGroups(HashSet<char>),
     Default
 }
 
@@ -30,6 +31,15 @@ impl <'a> GrepPatterns<'a>{
                     }
                 }
 
+                false
+            },
+            GrepPatterns::NegativeCharacterGroups(strlist) => {
+                let chars = input.chars();
+                for c in chars{
+                    if !strlist.contains(&c){
+                        return true 
+                    }
+                }
                 false
             }
             GrepPatterns::Default => false
@@ -55,8 +65,22 @@ impl <'b> Grep for GrepPatterns<'b>{
                     let mut chars = a.chars();
                     chars.next();
                     chars.next_back();
+                    let mut is_negate = false;
+
+                    if let Some(first_char) = chars.next(){
+                        if first_char == '^'{
+                            is_negate = true;
+                        }else{
+                            hashset.insert(first_char);
+                        }
+                    }
+
                     for c in chars{
                         hashset.insert(c);
+                    }
+
+                    if is_negate{
+                        return GrepPatterns::NegativeCharacterGroups(hashset);
                     }
                     return GrepPatterns::PositiveCharacterGroups(hashset)
                 }
@@ -96,5 +120,13 @@ fn main() -> Result<(), anyhow::Error> {
         process::exit(0)
     } else {
         process::exit(1)
+    }
+}
+
+#[cfg(test)]
+mod tests{
+    #[test]
+    fn test1(){
+
     }
 }
