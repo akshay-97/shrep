@@ -52,7 +52,10 @@ impl <'b> Grep for GrepPatterns<'b>{
                 }
                 if a.len() >= 2 && a.starts_with('[') && a.ends_with(']'){
                     let mut hashset = HashSet::new();
-                    for c in a.chars(){
+                    let mut chars = a.chars();
+                    chars.next();
+                    chars.next_back();
+                    for c in chars{
                         hashset.insert(c);
                     }
                     return GrepPatterns::PositiveCharacterGroups(hashset)
