@@ -3,11 +3,13 @@ use std::io;
 use std::process;
 use clap::{arg, command};
 use anyhow::{Result,anyhow};
+use std::collections::HashSet;
 
 enum GrepPatterns<'a>{
     Number,
     AlphaNumerUnderscore,
     Contains(&'a str),
+    PositiveCharacterGroups(HashSet<char>),
     Default
 }
 
@@ -20,6 +22,16 @@ impl <'a> GrepPatterns<'a>{
                 input.chars().any(|c| c.is_ascii_digit()),
             GrepPatterns::Contains(c) =>
                 input.contains(c),
+            GrepPatterns::PositiveCharacterGroups(strlist) => {
+                let chars = input.chars();
+                for c in chars{
+                    if strlist.contains(&c){
+                        return true
+                    }
+                }
+
+                false
+            }
             GrepPatterns::Default => false
         }
     }
@@ -35,11 +47,18 @@ impl <'b> Grep for GrepPatterns<'b>{
             "\\d" => GrepPatterns::Number,
             "\\w" => GrepPatterns::AlphaNumerUnderscore,
             a => {
-                if a.chars().count() == 1{
-                    GrepPatterns::Contains(a)
-                }else{
-                    GrepPatterns::Default
+                if a.len() == 1{
+                    return GrepPatterns::Contains(a)
                 }
+                if a.len() >= 2 && a.starts_with('[') && a.ends_with(']'){
+                    let mut hashset = HashSet::new();
+                    for c in a.chars(){
+                        hashset.insert(c);
+                    }
+                    return GrepPatterns::PositiveCharacterGroups(hashset)
+                }
+
+                GrepPatterns::Default
             }
         }
     }
