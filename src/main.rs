@@ -5,12 +5,12 @@ use clap::{arg, command};
 use anyhow::{Result,anyhow};
 
 mod grep;
-use grep::{GrepPatterns, Grep};
+use grep::GrepFinder;
 
-fn match_pattern(input_line: &str, pattern: GrepPatterns<'_>) -> bool
-where
+fn match_pattern(input_line: &str, pattern: &str) -> bool
 {
-    pattern.find(input_line)
+    GrepFinder::init(input_line, pattern)
+        .find()
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -29,9 +29,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     io::stdin().read_line(&mut input_line).unwrap();
 
-    let grep_pattern = GrepPatterns::grep(pattern.as_str());
-
-    if match_pattern(&input_line, grep_pattern) {
+    if match_pattern(&input_line, &pattern) {
         process::exit(0)
     } else {
         process::exit(1)

@@ -40,7 +40,7 @@ impl GrepPatterns{
         }
     }
 
-    pub fn find_by_step<'a>(self, mut input : Peekable<Chars<'a>>) -> Option<bool>{
+    pub fn find_by_step<'a>(self, input : &mut Peekable<Chars<'a>>) -> Option<bool>{
         match self{
             GrepPatterns::AlphaNumerUnderscore =>{
                 let next_char= input.next()?;
@@ -55,26 +55,34 @@ impl GrepPatterns{
                 Some(next_char == ch)
             },
             GrepPatterns::PositiveCharacterGroups(strlist) => {
-                
+                //eprintln!("PositiveCharacterGroups not supported");
+                let next_char = input.next()?;
+                Some(strlist.contains(&next_char))
                 // for c in chars{
+                //let chars = input.chars();
                 //     if strlist.contains(&c){
                 //         return true
                 //     }
                 // }
-                while let Some(c) = input.next(){
+                // while let Some(c) = input.next(){
 
-                }
+                // }
+                //None
             },
             GrepPatterns::NegativeCharacterGroups(strlist) => {
-                let chars = input.chars();
-                for c in chars{
-                    if !strlist.contains(&c){
-                        return true 
-                    }
-                }
-                false
+                //eprintln!("NegativeCharacterGroups not supported");
+                //None
+                let next_char = input.next()?;
+                Some(!strlist.contains(&next_char))
+                // let chars = input.chars();
+                // for c in chars{
+                //     if !strlist.contains(&c){
+                //         return true 
+                //     }
+                // }
+                // false
             }
-            GrepPatterns::Default => false
+            GrepPatterns::Default => None
         }
     }
 }
@@ -125,6 +133,7 @@ impl GrepPatterns{
 
 
 //todo: rewrite with nom parser
+#[derive(Clone)]
 struct RegEx<'a>{
     chars: Chars<'a>,
 }
@@ -188,10 +197,9 @@ impl <'a> Iterator for RegEx<'a>{
 }
 
 
-struct GrepFinder<'a>{
+pub struct GrepFinder<'a>{
     input : Peekable<Chars<'a>>,
     regex_pattern : RegEx<'a>,
-    prev_pattern : Option<GrepPatterns>,
 }
 
 impl <'a> GrepFinder<'a>{
@@ -199,11 +207,32 @@ impl <'a> GrepFinder<'a>{
         Self{
             input : input.chars().peekable(),
             regex_pattern : RegEx::init(pattern),
-            prev_pattern : None
         }
     }
 
     pub fn find(&mut self) -> bool{
-        
+        loop {
+            let regex_pattern = self.regex_pattern.clone();
+            if Self::match_me(&mut self.input, regex_pattern){
+                return true;
+            }
+            if self.input.next() == None{
+                break;
+            }
+        }
+        false
+    }
+
+    fn match_me(input : &mut Peekable<Chars<'a>>, mut regex : RegEx<'a>) -> bool {
+        loop{
+            if let Some(pattern) = regex.next(){
+                if !pattern.find_by_step(input).unwrap_or(false){
+                    return false
+                }
+            }else{
+                break;
+            }
+        }
+        true
     }
 }
