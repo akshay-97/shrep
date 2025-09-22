@@ -55,93 +55,30 @@ impl GrepPatterns{
                 Some(next_char == ch)
             },
             GrepPatterns::PositiveCharacterGroups(strlist) => {
-                //eprintln!("PositiveCharacterGroups not supported");
                 let next_char = input.next()?;
                 Some(strlist.contains(&next_char))
-                // for c in chars{
-                //let chars = input.chars();
-                //     if strlist.contains(&c){
-                //         return true
-                //     }
-                // }
-                // while let Some(c) = input.next(){
-
-                // }
-                //None
             },
             GrepPatterns::NegativeCharacterGroups(strlist) => {
-                //eprintln!("NegativeCharacterGroups not supported");
-                //None
                 let next_char = input.next()?;
                 Some(!strlist.contains(&next_char))
-                // let chars = input.chars();
-                // for c in chars{
-                //     if !strlist.contains(&c){
-                //         return true 
-                //     }
-                // }
-                // false
             }
             GrepPatterns::Default => None
         }
     }
 }
 
-// pub trait Grep{
-//     fn grep<'a>(pattern: &'a str) -> GrepPatterns<'a>;
-// }
-
-// impl <'b> Grep for GrepPatterns<'b>{
-//     fn grep<'a>(pattern: &'a str) -> GrepPatterns<'a>{
-//         match pattern{
-//             "\\d" => GrepPatterns::Number,
-//             "\\w" => GrepPatterns::AlphaNumerUnderscore,
-//             a => {
-//                 if a.len() == 1{
-//                     return GrepPatterns::Contains(a)
-//                 }
-//                 if a.len() >= 2 && a.starts_with('[') && a.ends_with(']'){
-//                     let mut hashset = HashSet::new();
-//                     let mut chars = a.chars();
-//                     chars.next();
-//                     chars.next_back();
-//                     let mut is_negate = false;
-
-//                     if let Some(first_char) = chars.next(){
-//                         if first_char == '^'{
-//                             is_negate = true;
-//                         }else{
-//                             hashset.insert(first_char);
-//                         }
-//                     }
-
-//                     for c in chars{
-//                         hashset.insert(c);
-//                     }
-
-//                     if is_negate{
-//                         return GrepPatterns::NegativeCharacterGroups(hashset);
-//                     }
-//                     return GrepPatterns::PositiveCharacterGroups(hashset)
-//                 }
-
-//                 GrepPatterns::Default
-//             }
-//         }
-//     }
-// }
-
-
 //todo: rewrite with nom parser
 #[derive(Clone)]
 struct RegEx<'a>{
     chars: Chars<'a>,
+    next_character : Option<char>,
 }
 
 impl <'a> RegEx<'a>{
     fn init(pattern: &'a str) -> Self{
         Self{
-            chars : pattern.chars()
+            chars : pattern.chars(),
+            next_character : None
         }
     }
 }
@@ -150,16 +87,18 @@ impl <'a> Iterator for RegEx<'a>{
     type Item = GrepPatterns;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let first_char = self.chars.next()?;
+        let first_char = self.next_character.or(self.chars.next())?;
         match first_char{
             '\\' => {
-                let second_char = self.chars.next()?;
-                if second_char == 'd'{
+                let second_char = self.chars.next();
+                if second_char == Some('d'){
                     return Some(GrepPatterns::Number);
-                }else if second_char == 'w'{
+                }else if second_char == Some('w'){
                     return Some(GrepPatterns::AlphaNumerUnderscore);
+                }else{
+                    self.next_character = second_char;
+                    return Some(GrepPatterns::Contains(first_char))
                 }
-                None
             },
             '[' => {
                 // let mut cloned_iter = self.chars.clone();
@@ -213,7 +152,8 @@ impl <'a> GrepFinder<'a>{
     pub fn find(&mut self) -> bool{
         loop {
             let regex_pattern = self.regex_pattern.clone();
-            if Self::match_me(&mut self.input, regex_pattern){
+            let mut cloned_input = self.input.clone();
+            if Self::match_me(&mut cloned_input, regex_pattern){
                 return true;
             }
             if self.input.next() == None{
