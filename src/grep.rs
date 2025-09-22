@@ -8,6 +8,7 @@ pub enum GrepPatterns<'a>{
     PositiveCharacterGroups(HashSet<char>),
     NegativeCharacterGroups(HashSet<char>),
     BeginWith(&'a str),
+    EndsWith(&'a str),
     Default
 }
 
@@ -15,6 +16,7 @@ impl <'a>  GrepPatterns<'a> {
     fn can_continue(&self) -> bool{
         match self{
             Self::BeginWith(_) => false,
+            Self::EndsWith(_) => false,
             _ => true,
         }
     }
@@ -47,6 +49,9 @@ impl <'a>  GrepPatterns<'a> {
             },
             GrepPatterns::BeginWith(slice) => {
                 input.starts_with(slice)
+            },
+            GrepPatterns::EndsWith(slice) => {
+                input.ends_with(slice)
             }
             GrepPatterns::Default => false
         }
@@ -83,6 +88,9 @@ impl <'a>  GrepPatterns<'a> {
                     chars_advance_by(input, strslice.len());
                 }
                 Some(result)
+            },
+            GrepPatterns::EndsWith(slice) => {
+                Some(input.as_str().ends_with(slice))
             }
             GrepPatterns::Default => None
         }
@@ -109,6 +117,15 @@ impl <'a> Iterator for RegEx<'a>{
     type Item = GrepPatterns<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let mut cloned_iter = self.chars.clone();
+        let last_char = cloned_iter.next_back()?;
+
+        if last_char == '$'{
+            let pattern = GrepPatterns::EndsWith(cloned_iter.as_str());
+            self.chars = "".chars();
+            return Some(pattern)
+        }
+
         let first_char = self.next_character.or(self.chars.next())?;
         match first_char{
             '\\' => {
