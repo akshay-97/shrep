@@ -1,16 +1,25 @@
 use std::{collections::HashSet, str::Chars, iter::Peekable};
 
-pub enum GrepPatterns{
+#[derive(Debug)]
+pub enum GrepPatterns<'a>{
     Number,
     AlphaNumerUnderscore,
     Contains(char),
     PositiveCharacterGroups(HashSet<char>),
     NegativeCharacterGroups(HashSet<char>),
+    BeginWith(&'a str),
     Default
 }
 
-impl GrepPatterns{
-    pub fn find(self, input: &str) -> bool{
+impl <'a>  GrepPatterns<'a> {
+    fn can_continue(&self) -> bool{
+        match self{
+            Self::BeginWith(_) => false,
+            _ => true,
+        }
+    }
+
+    pub fn find(self, input: &'a str) -> bool{
         match self{
             GrepPatterns::AlphaNumerUnderscore =>
                 input.chars().any(|c| c.is_alphanumeric() || c == '_'),
@@ -35,12 +44,15 @@ impl GrepPatterns{
                     }
                 }
                 false
+            },
+            GrepPatterns::BeginWith(slice) => {
+                input.starts_with(slice)
             }
             GrepPatterns::Default => false
         }
     }
 
-    pub fn find_by_step<'a>(self, input : &mut Peekable<Chars<'a>>) -> Option<bool>{
+    pub fn find_by_step(&self, input : &mut Chars<'a>) -> Option<bool>{
         match self{
             GrepPatterns::AlphaNumerUnderscore =>{
                 let next_char= input.next()?;
@@ -52,7 +64,7 @@ impl GrepPatterns{
             },
             GrepPatterns::Contains(ch) => {
                 let next_char = input.next()?;
-                Some(next_char == ch)
+                Some(next_char == *ch)
             },
             GrepPatterns::PositiveCharacterGroups(strlist) => {
                 let next_char = input.next()?;
@@ -61,6 +73,16 @@ impl GrepPatterns{
             GrepPatterns::NegativeCharacterGroups(strlist) => {
                 let next_char = input.next()?;
                 Some(!strlist.contains(&next_char))
+            },
+            GrepPatterns::BeginWith(slice) => {
+                let strslice = input
+                    .as_str();
+                let result = strslice
+                    .starts_with(slice);
+                if result{
+                    chars_advance_by(input, strslice.len());
+                }
+                Some(result)
             }
             GrepPatterns::Default => None
         }
@@ -84,7 +106,7 @@ impl <'a> RegEx<'a>{
 }
 
 impl <'a> Iterator for RegEx<'a>{
-    type Item = GrepPatterns;
+    type Item = GrepPatterns<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let first_char = self.next_character.or(self.chars.next())?;
@@ -128,6 +150,11 @@ impl <'a> Iterator for RegEx<'a>{
                 return Some(GrepPatterns::PositiveCharacterGroups(hashset))
     
             },
+            '^' => {
+                let result = Some(GrepPatterns::BeginWith(self.chars.as_str()));
+                self.chars = "".chars();
+                result
+            }
             c => {
                 return Some(GrepPatterns::Contains(c))
             }
@@ -137,14 +164,14 @@ impl <'a> Iterator for RegEx<'a>{
 
 
 pub struct GrepFinder<'a>{
-    input : Peekable<Chars<'a>>,
+    input :Chars<'a>,
     regex_pattern : RegEx<'a>,
 }
 
 impl <'a> GrepFinder<'a>{
     pub fn init(input: &'a str, pattern : &'a str) -> Self{
         Self{
-            input : input.chars().peekable(),
+            input : input.chars(),
             regex_pattern : RegEx::init(pattern),
         }
     }
@@ -153,26 +180,41 @@ impl <'a> GrepFinder<'a>{
         loop {
             let regex_pattern = self.regex_pattern.clone();
             let mut cloned_input = self.input.clone();
-            if Self::match_me(&mut cloned_input, regex_pattern){
-                return true;
-            }
-            if self.input.next() == None{
+            let (result, should_continue) = 
+                Self::match_me(&mut cloned_input, regex_pattern);
+                
+            if result {return true;}
+
+            if !should_continue || self.input.next() == None{
                 break;
             }
         }
         false
     }
 
-    fn match_me(input : &mut Peekable<Chars<'a>>, mut regex : RegEx<'a>) -> bool {
+    fn match_me(input : &mut Chars<'a>, mut regex : RegEx<'a>) -> (bool, bool) {
         loop{
             if let Some(pattern) = regex.next(){
-                if !pattern.find_by_step(input).unwrap_or(false){
-                    return false
+                //println!("{:?}", pattern);
+                if !pattern.find_by_step(input).unwrap_or(false){    
+                    return (false, pattern.can_continue())
                 }
             }else{
                 break;
             }
         }
-        true
+        (true, false)
+    }
+}
+
+
+//utils
+
+fn chars_advance_by<'a>(chars : &mut Chars<'a>, mut advance_by : usize){
+    while advance_by > 0{
+        if chars.next() == None{
+            break;
+        }
+        advance_by -= 1;
     }
 }
