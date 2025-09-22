@@ -3,93 +3,9 @@ use std::io;
 use std::process;
 use clap::{arg, command};
 use anyhow::{Result,anyhow};
-use std::collections::HashSet;
 
-enum GrepPatterns<'a>{
-    Number,
-    AlphaNumerUnderscore,
-    Contains(&'a str),
-    PositiveCharacterGroups(HashSet<char>),
-    NegativeCharacterGroups(HashSet<char>),
-    Default
-}
-
-impl <'a> GrepPatterns<'a>{
-    fn find(self, input: &str) -> bool{
-        match self{
-            GrepPatterns::AlphaNumerUnderscore =>
-                input.chars().any(|c| c.is_alphanumeric() || c == '_'),
-            GrepPatterns::Number =>
-                input.chars().any(|c| c.is_ascii_digit()),
-            GrepPatterns::Contains(c) =>
-                input.contains(c),
-            GrepPatterns::PositiveCharacterGroups(strlist) => {
-                let chars = input.chars();
-                for c in chars{
-                    if strlist.contains(&c){
-                        return true
-                    }
-                }
-
-                false
-            },
-            GrepPatterns::NegativeCharacterGroups(strlist) => {
-                let chars = input.chars();
-                for c in chars{
-                    if !strlist.contains(&c){
-                        return true 
-                    }
-                }
-                false
-            }
-            GrepPatterns::Default => false
-        }
-    }
-}
-
-trait Grep{
-    fn grep<'a>(pattern: &'a str) -> GrepPatterns<'a>;
-}
-
-impl <'b> Grep for GrepPatterns<'b>{
-    fn grep<'a>(pattern: &'a str) -> GrepPatterns<'a>{
-        match pattern{
-            "\\d" => GrepPatterns::Number,
-            "\\w" => GrepPatterns::AlphaNumerUnderscore,
-            a => {
-                if a.len() == 1{
-                    return GrepPatterns::Contains(a)
-                }
-                if a.len() >= 2 && a.starts_with('[') && a.ends_with(']'){
-                    let mut hashset = HashSet::new();
-                    let mut chars = a.chars();
-                    chars.next();
-                    chars.next_back();
-                    let mut is_negate = false;
-
-                    if let Some(first_char) = chars.next(){
-                        if first_char == '^'{
-                            is_negate = true;
-                        }else{
-                            hashset.insert(first_char);
-                        }
-                    }
-
-                    for c in chars{
-                        hashset.insert(c);
-                    }
-
-                    if is_negate{
-                        return GrepPatterns::NegativeCharacterGroups(hashset);
-                    }
-                    return GrepPatterns::PositiveCharacterGroups(hashset)
-                }
-
-                GrepPatterns::Default
-            }
-        }
-    }
-}
+mod grep;
+use grep::{GrepPatterns, Grep};
 
 fn match_pattern(input_line: &str, pattern: GrepPatterns<'_>) -> bool
 where
@@ -109,7 +25,6 @@ fn main() -> Result<(), anyhow::Error> {
 
     let pattern = grep.get_one::<String>("pattern").ok_or(anyhow!("Missing Attribute"))?;
 
-    // let pattern = env::args().nth(2).unwrap();
     let mut input_line = String::new();
 
     io::stdin().read_line(&mut input_line).unwrap();
