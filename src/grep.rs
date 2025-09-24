@@ -1,6 +1,6 @@
 use std::{collections::HashSet, str::Chars, iter::Peekable};
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum GrepPatterns<'a>{
     Number,
     AlphaNumerUnderscore,
@@ -8,7 +8,7 @@ pub enum GrepPatterns<'a>{
     PositiveCharacterGroups(HashSet<char>),
     NegativeCharacterGroups(HashSet<char>),
     BeginWith(&'a str),
-    EndsWith(&'a str),
+    End,
     Default
 }
 
@@ -16,7 +16,7 @@ impl <'a>  GrepPatterns<'a> {
     fn can_continue(&self) -> bool{
         match self{
             Self::BeginWith(_) => false,
-            Self::EndsWith(_) => false,
+            Self::End  => false,
             _ => true,
         }
     }
@@ -50,8 +50,8 @@ impl <'a>  GrepPatterns<'a> {
             GrepPatterns::BeginWith(slice) => {
                 input.starts_with(slice)
             },
-            GrepPatterns::EndsWith(slice) => {
-                input.ends_with(slice)
+            GrepPatterns::End => {
+                input == ""
             }
             GrepPatterns::Default => false
         }
@@ -89,26 +89,30 @@ impl <'a>  GrepPatterns<'a> {
                 }
                 Some(result)
             },
-            GrepPatterns::EndsWith(slice) => {
-                Some(input.as_str().ends_with(slice))
+            GrepPatterns::End => {
+                Some(input.next() == None)
             }
             GrepPatterns::Default => None
         }
     }
 }
 
+const PATTERN_DELIMITER : [char;4] = ['\\', '[', '^','$'];
+
 //todo: rewrite with nom parser
 #[derive(Clone)]
 struct RegEx<'a>{
     chars: Chars<'a>,
     next_character : Option<char>,
+    original_slice : &'a str
 }
 
 impl <'a> RegEx<'a>{
     fn init(pattern: &'a str) -> Self{
         Self{
             chars : pattern.chars(),
-            next_character : None
+            next_character : None,
+            original_slice : pattern
         }
     }
 }
@@ -117,14 +121,14 @@ impl <'a> Iterator for RegEx<'a>{
     type Item = GrepPatterns<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut cloned_iter = self.chars.clone();
-        let last_char = cloned_iter.next_back()?;
+        //let mut cloned_iter = self.chars.clone();
+        // let last_char = cloned_iter.next_back()?;
 
-        if last_char == '$'{
-            let pattern = GrepPatterns::EndsWith(cloned_iter.as_str());
-            self.chars = "".chars();
-            return Some(pattern)
-        }
+        // if last_char == '$'{
+        //     let pattern = GrepPatterns::EndsWith(cloned_iter.as_str());
+        //     self.chars = "".chars();
+        //     return Some(pattern)
+        // }
 
         let first_char = self.next_character.or(self.chars.next())?;
         match first_char{
@@ -168,10 +172,20 @@ impl <'a> Iterator for RegEx<'a>{
     
             },
             '^' => {
-                let result = Some(GrepPatterns::BeginWith(self.chars.as_str()));
-                self.chars = "".chars();
-                result
-            }
+                let mut end_index = 0;
+                while let Some(c) = self.chars.next(){
+                    if PATTERN_DELIMITER.contains(&c){
+                        self.next_character = Some(c);
+                        break;
+                    }
+                    end_index += 1;
+                }
+                Some(GrepPatterns::BeginWith(&self.original_slice[1..(end_index+1)]))
+            },
+            '$' => {
+                self.next_character = None;
+                Some(GrepPatterns::End)
+            },
             c => {
                 return Some(GrepPatterns::Contains(c))
             }
@@ -212,7 +226,6 @@ impl <'a> GrepFinder<'a>{
     fn match_me(input : &mut Chars<'a>, mut regex : RegEx<'a>) -> (bool, bool) {
         loop{
             if let Some(pattern) = regex.next(){
-                //println!("{:?}", pattern);
                 if !pattern.find_by_step(input).unwrap_or(false){    
                     return (false, pattern.can_continue())
                 }
