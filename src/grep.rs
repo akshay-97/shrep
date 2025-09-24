@@ -85,7 +85,7 @@ impl <'a>  GrepPatterns<'a> {
                 let result = strslice
                     .starts_with(slice);
                 if result{
-                    chars_advance_by(input, strslice.len());
+                    chars_advance_by(input, slice.len());
                 }
                 Some(result)
             },
@@ -226,6 +226,7 @@ impl <'a> GrepFinder<'a>{
     fn match_me(input : &mut Chars<'a>, mut regex : RegEx<'a>) -> (bool, bool) {
         loop{
             if let Some(pattern) = regex.next(){
+                //println!("pattern {:?} input {:?}", pattern, input);
                 if !pattern.find_by_step(input).unwrap_or(false){    
                     return (false, pattern.can_continue())
                 }
