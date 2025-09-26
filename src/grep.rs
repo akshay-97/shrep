@@ -8,6 +8,7 @@ pub enum GrepPatterns<'a>{
     PositiveCharacterGroups(HashSet<char>),
     NegativeCharacterGroups(HashSet<char>),
     BeginWith(&'a str),
+    MatchOneOrMany(char),
     End,
     Default
 }
@@ -97,7 +98,7 @@ impl <'a>  GrepPatterns<'a> {
     }
 }
 
-const PATTERN_DELIMITER : [char;4] = ['\\', '[', '^','$'];
+const PATTERN_DELIMITER : [char;5] = ['\\', '[', '^','$', '+'];
 
 //todo: rewrite with nom parser
 #[derive(Clone)]

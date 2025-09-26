@@ -4,13 +4,14 @@ use std::process;
 use clap::{arg, command};
 use anyhow::{Result,anyhow};
 
-mod grep;
-use grep::GrepFinder;
+//mod grep;
+mod grep_1;
+use grep_1::*;
+//use grep::GrepFinder;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool
 {
-    GrepFinder::init(input_line, pattern)
-        .find()
+    match_me(input_line, pattern)
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
