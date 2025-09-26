@@ -16,10 +16,11 @@ pub fn match_me(input : &str, regex : &str) -> bool{
         if match_here(&input[iter..], regex){
             return true
         }
+        
+        iter +=1;
         if iter >= input.len(){
             break;
         }
-        iter +=1;
     }
 
     return false
@@ -28,6 +29,12 @@ pub fn match_me(input : &str, regex : &str) -> bool{
 fn match_here(input : &str, regex: &str) -> bool{
     if regex.len() == 0{
         return true
+    }
+
+    if regex.len() > 1 && regex.chars().nth(1).unwrap() == '+'{
+        return match_star(regex.chars().nth(0).unwrap(),
+                input,
+                &regex[2..])
     }
 
     let first_char = regex.chars().nth(0).unwrap();
@@ -111,7 +118,7 @@ fn match_character_set(input : &str, regex: &str) -> bool{
 fn match_star(c : char, input : &str, regex : &str) -> bool{
     let mut input_chars = input.chars();
     loop{
-        if match_here(input, regex){
+        if match_here(input_chars.as_str(), regex){
             return true
         }
         let ch = input_chars.next();
