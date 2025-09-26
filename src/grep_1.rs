@@ -1,8 +1,26 @@
-use std::{collections::HashSet, iter::Enumerate};
+use std::collections::HashSet;
 
-use nom::character;
+pub fn match_wrapper(input : &str, regex : &str) -> bool{
+    if regex.starts_with('(')
+        && regex.ends_with(')')
+        && regex.contains('|')
+    {
+        let regex_ = regex.strip_prefix('(').unwrap();
+        let regex__ = regex_.strip_suffix(')').unwrap();
+        let mut splitted = regex__.split('|');
 
-pub fn match_me(input : &str, regex : &str) -> bool{
+        while let Some(slice) = splitted.next(){
+            if match_me(input, slice) {
+                return true
+            }
+        }
+        return false
+    }
+
+    return match_me(input, regex)
+}
+
+fn match_me(input : &str, regex : &str) -> bool{
     if input.len() ==0 || regex.len() == 0{
         return false
     }
@@ -127,7 +145,7 @@ fn match_plus(c : char, input : &str, regex : &str) -> bool{
         if ch == None{
             break;
         }
-        
+
         if c != '.' && Some(c) != ch{
             break;
         }
