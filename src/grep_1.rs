@@ -60,7 +60,7 @@ fn match_here(input : &str, regex: &str) -> bool{
         return input.len() == 0
     }
 
-    if input.len() > 0 && first_char == input.chars().nth(0).unwrap(){
+    if input.len() > 0 && (first_char == '.' || first_char == input.chars().nth(0).unwrap()){
         return match_here(&input[1..], &regex[1..])
     }
 
