@@ -124,6 +124,10 @@ fn match_plus(c : char, input : &str, regex : &str) -> bool{
     let mut input_chars = input.chars();
     loop{
         let ch = input_chars.next();
+        if ch == None{
+            break;
+        }
+        
         if c != '.' && Some(c) != ch{
             break;
         }
