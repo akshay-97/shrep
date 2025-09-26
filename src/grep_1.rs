@@ -32,7 +32,7 @@ fn match_here(input : &str, regex: &str) -> bool{
     }
 
     if regex.len() > 1 && regex.chars().nth(1).unwrap() == '+'{
-        return match_star(regex.chars().nth(0).unwrap(),
+        return match_plus(regex.chars().nth(0).unwrap(),
                 input,
                 &regex[2..])
     }
@@ -115,16 +115,17 @@ fn match_character_set(input : &str, regex: &str) -> bool{
 
 }
 
-fn match_star(c : char, input : &str, regex : &str) -> bool{
+fn match_plus(c : char, input : &str, regex : &str) -> bool{
     let mut input_chars = input.chars();
     loop{
-        if match_here(input_chars.as_str(), regex){
-            return true
-        }
         let ch = input_chars.next();
         if Some(c) != ch{
             break;
         }
+
+        if match_here(input_chars.as_str(), regex){
+            return true
+        } 
     }
 
     return false
