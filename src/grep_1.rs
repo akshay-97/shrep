@@ -11,15 +11,14 @@ pub fn match_me(input : &str, regex : &str) -> bool{
         return match_here(input, &regex[1..])
     }
 
-    let mut iter = 0;
+    let mut input_chars = input.chars();
     loop{
-        if match_here(&input[iter..], regex){
+        if match_here(input_chars.as_str(), regex){
             return true
         }
         
-        iter +=1;
-        if iter >= input.len(){
-            break;
+        if input_chars.next() == None{
+            break
         }
     }
 
