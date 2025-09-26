@@ -36,6 +36,12 @@ fn match_here(input : &str, regex: &str) -> bool{
                 &regex[2..])
     }
 
+    if regex.len() > 1 && regex.chars().nth(1).unwrap() == '?'{
+        return match_option(regex.chars().nth(0).unwrap(),
+                input,
+                &regex[2..])
+    }
+
     let first_char = regex.chars().nth(0).unwrap();
     if first_char == '['{
         return match_character_set(input, &regex[1..])
@@ -128,4 +134,11 @@ fn match_plus(c : char, input : &str, regex : &str) -> bool{
     }
 
     return false
+}
+
+fn match_option(c :char, input : &str, regex : &str) -> bool{
+    let mut input_chars = input.chars();
+
+    return match_here(input, regex)
+        || (input_chars.next() == Some(c) && match_here(input_chars.as_str(), regex))
 }
