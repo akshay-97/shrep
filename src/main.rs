@@ -11,7 +11,7 @@ use grep_1::*;
 
 fn match_pattern(input_line: &str, pattern: &str) -> bool
 {
-    match_wrapper(input_line, pattern)
+    match_me(input_line, pattern)
 }
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
