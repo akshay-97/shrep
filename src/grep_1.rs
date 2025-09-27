@@ -1,5 +1,25 @@
 use std::collections::HashSet;
 
+enum MatchType{
+    Ch(char),
+    Digit,
+    AlphaNumUnderScore
+}
+
+impl MatchType {
+    fn is(&self, c : char) -> bool{
+        match self{
+            Self::Ch(ch) => &c == ch,
+            Self::Digit => c.is_ascii_digit(),
+            Self::AlphaNumUnderScore => c.is_alphanumeric() || c == '_'
+        }
+    }
+
+    fn is_not(&self, c : char) -> bool{
+        !self.is(c)
+    }
+}
+
 pub fn match_me(input : &str, regex : &str) -> bool{
     if input.len() ==0 || regex.len() == 0{
         return false
@@ -42,7 +62,7 @@ fn match_here<'a>(mut input : &'a str, mut regex: &'a str) -> (bool, &'a str, &'
     }
 
     if regex.len() > 1 && regex.chars().nth(1).unwrap() == '+'{
-        return match_plus(regex.chars().nth(0).unwrap(),
+        return match_plus(MatchType::Ch(regex.chars().nth(0).unwrap()),
                 input,
                 &regex[2..])
     }
@@ -60,9 +80,18 @@ fn match_here<'a>(mut input : &'a str, mut regex: &'a str) -> (bool, &'a str, &'
 
     if first_char == '\\'{
         if regex.chars().nth(1) == Some('d'){
+
+            if regex.chars().nth(2) == Some('+'){
+                return match_plus(MatchType::Digit, input, &regex[3..])
+            }
             return match_character_digit(input, &regex[2..])
         }
         if regex.chars().nth(1) == Some('w'){
+
+            if regex.chars().nth(2) == Some('+'){
+                return match_plus(MatchType::AlphaNumUnderScore, input, &regex[3..])
+            }
+
             return match_character_alu(input, &regex[2..])
         }
     }
@@ -131,7 +160,7 @@ fn match_character_set<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str, &
 
 }
 
-fn match_plus<'a>(c : char, input : &'a str, regex : &'a str) -> (bool, &'a str, &'a str){
+fn match_plus<'a>(c : MatchType, input : &'a str, regex : &'a str) -> (bool, &'a str, &'a str){
     let mut input_chars = input.chars();
     loop{
         let ch = input_chars.next();
@@ -139,7 +168,7 @@ fn match_plus<'a>(c : char, input : &'a str, regex : &'a str) -> (bool, &'a str,
             break;
         }
 
-        if c != '.' && Some(c) != ch{
+        if c.is_not('.') && c.is_not(ch.unwrap()){
             break;
         }
 
