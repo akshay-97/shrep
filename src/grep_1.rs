@@ -119,7 +119,7 @@ fn match_character_alu<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str, &
         return (false, input, regex)
     }
 
-    return (true, &input[1..], regex)
+    return match_here(&input[1..], regex)
 }
 
 fn match_character_digit<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str, &'a str){
@@ -131,7 +131,7 @@ fn match_character_digit<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str,
         return (false, input, regex)
     }
 
-    return (true, &input[1..], regex)
+    return match_here(&input[1..], regex)
 
 }
 
@@ -156,7 +156,7 @@ fn match_character_set<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str, &
         return (false, input, regex)
     }
 
-    return (true, &input[1..], regex_chars.as_str())
+    return match_here(&input[1..], regex_chars.as_str())
 
 }
 
@@ -174,7 +174,7 @@ fn match_plus<'a>(c : MatchType, input : &'a str, regex : &'a str) -> (bool, &'a
 
         let (result, input_, regex_) = match_here(input_chars.as_str(), regex);
         if result{
-            return (true, input_, regex_)
+            return match_here(input_, regex_)
         } 
     }
 
@@ -186,7 +186,7 @@ fn match_option<'a>(c :char, input : &'a str, regex : &'a str) -> (bool, &'a str
 
     let (result, input_, regex_) = match_here(input, regex);
     if result{
-        return (true, input_, regex_)
+        return match_here(input_, regex_)
     }
     if input_chars.next() == Some(c){
         return match_here(input_chars.as_str(), regex)
