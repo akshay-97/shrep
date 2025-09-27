@@ -47,7 +47,7 @@ fn match_here<'a>(mut input : &'a str, mut regex: &'a str) -> (bool, &'a str, &'
     if regex.starts_with('('){
         if let Some(i) = regex[1..].find(')'){
             if regex[1..i].contains('|'){
-                let (result, input_, regex_) = match_either(input , &regex[(i+1)..], &regex[1..(i+1)]);
+                let (result, input_, regex_) = match_either(input , &regex[(i+2)..], &regex[1..(i+1)]);
                 if !result{
                     return (false, input, regex)
                 }
