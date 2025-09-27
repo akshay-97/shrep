@@ -131,7 +131,7 @@ fn match_character_digit<'a>(input : &'a str, regex: &'a str) -> (bool, &'a str,
         return (false, input, regex)
     }
 
-    return (false, &input[1..], regex)
+    return (true, &input[1..], regex)
 
 }
 
