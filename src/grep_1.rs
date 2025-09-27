@@ -47,7 +47,7 @@ fn match_here<'a>(mut input : &'a str, mut regex: &'a str) -> (bool, &'a str, &'
     if regex.starts_with('('){
         if let Some(i) = regex[1..].find(')'){
             if regex[1..i].contains('|'){
-                let (result, input_, regex_) = match_either(input , &regex[(i+1)..], &regex[1..i]);
+                let (result, input_, regex_) = match_either(input , &regex[(i+1)..], &regex[1..(i+1)]);
                 if !result{
                     return (false, input, regex)
                 }
@@ -195,15 +195,15 @@ fn match_option<'a>(c :char, input : &'a str, regex : &'a str) -> (bool, &'a str
     return (false, input, regex)
 }
 
-fn match_either<'a>(mut input : &'a str, mut regex : &'a str, either_list : &'a str) -> (bool, &'a str, &'a str){
+fn match_either<'a>(mut input : &'a str, regex : &'a str, either_list : &'a str) -> (bool, &'a str, &'a str){
     let mut splitted = either_list.split('|');
 
     let mut result = false;
+    
     while let Some(slice) = splitted.next(){
-        let (result_, input_, regex_) = match_here(input, slice);
+        let (result_, input_, _regex_) = match_here(input, slice);
         if result_{
             input = input_;
-            regex = regex_;
             result = true;
             break;
         }
